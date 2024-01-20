@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -28,6 +31,13 @@ func writeFile(filePath string, content string) {
 
 func main() {
 	// Define a function to handle HTTP requests
+	// TODO -
+	var dir string
+	flag.StringVar(&dir, "dir", ".", "The directory you want the stakz server to run in.")
+	flag.Parse()
+
+	os.Chdir(dir)
+
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Access-Control-Allow-Origin", "*")
 		files := []string{}
@@ -75,6 +85,36 @@ func main() {
 				res.Write([]byte(err.Error()))
 			}
 		}
+	})
+
+	// Basic echo http endpoint
+	http.HandleFunc("/echo", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Headers", "Content-Range, Content-Disposition, Content-Type, ETag")
+		req.Write(res)
+	})
+
+	http.HandleFunc("/execute", func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Headers", "Content-Range, Content-Disposition, Content-Type, ETag")
+		// Execute the command
+		script, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			log.Println(err)
+			res.WriteHeader(http.StatusInternalServerError)
+			res.Write([]byte(err.Error()))
+			return
+		}
+		cmd := exec.Command("/bin/bash", "-c", string(script))
+		out, err := cmd.Output()
+		if err != nil {
+			log.Println(err)
+			res.WriteHeader(http.StatusInternalServerError)
+			res.Write([]byte(err.Error()))
+			return
+		}
+		res.Write(out)
+		req.Write(res)
 	})
 
 	// Start the server and listen on port 8080
