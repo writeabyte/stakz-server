@@ -105,16 +105,15 @@ func main() {
 			res.Write([]byte(err.Error()))
 			return
 		}
-		cmd := exec.Command("/bin/bash", "-c", string(script))
-		out, err := cmd.Output()
-		if err != nil {
-			log.Println(err)
-			res.WriteHeader(http.StatusInternalServerError)
-			res.Write([]byte(err.Error()))
-			return
-		}
+		scriptStr := string(script)
+		log.Println(scriptStr)
+		cmd := exec.Command("/bin/bash", "-c", scriptStr)
+		out, err := cmd.CombinedOutput()
+		log.Println(string(out))
 		res.Write(out)
-		req.Write(res)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+		}
 	})
 
 	// Start the server and listen on port 8080
