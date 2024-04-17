@@ -108,11 +108,13 @@ func main() {
 		scriptStr := string(script)
 		log.Println(scriptStr)
 		cmd := exec.Command("/bin/bash", "-c", scriptStr)
-		out, err := cmd.CombinedOutput()
+		out, err := cmd.Output()
 		log.Println(string(out))
-		res.Write(out)
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
+			res.Write([]byte(err.Error()))
+		} else {
+			res.Write(out)
 		}
 	})
 
