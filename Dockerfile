@@ -19,7 +19,7 @@ WORKDIR /app
 COPY --from=builder /app/myapp .
 
 # Expose the port your application will run on
-EXPOSE 8080
+EXPOSE 3001
 
 # Command to run your application
 CMD ["./myapp"]

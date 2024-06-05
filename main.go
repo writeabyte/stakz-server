@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func writeFile(filePath string, content string) {
@@ -61,8 +62,15 @@ func main() {
 	})
 
 	http.HandleFunc("/content", func(res http.ResponseWriter, req *http.Request) {
-		res.Header().Set("Access-Control-Allow-Origin", "*")
-		res.Header().Set("Access-Control-Allow-Headers", "*")
+		fmt.Println("Content Request received")
+		host := req.Header.Get("Origin")
+		if strings.HasPrefix(host, "http://localhost") || strings.HasPrefix(host, "https://stakz.dev") {
+			res.Header().Set("Access-Control-Allow-Origin", host)
+		} else {
+			res.WriteHeader(http.StatusForbidden)
+			res.Write([]byte("invalid host: " + host))
+			return
+		}
 		if req.Method == "OPTIONS" {
 			res.WriteHeader(http.StatusOK)
 			return
@@ -118,7 +126,6 @@ func main() {
 		}
 	})
 
-	// Start the server and listen on port 8080
 	log.Fatalln(http.ListenAndServe(":3001", nil))
 	fmt.Println("Server listening on 3001")
 }
