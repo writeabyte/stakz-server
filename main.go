@@ -115,7 +115,7 @@ func main() {
 		}
 		scriptStr := string(script)
 		log.Println(scriptStr)
-		cmd := exec.Command("/bin/bash", "-c", scriptStr)
+		cmd := exec.Command("/bin/sh", "-c", scriptStr)
 		out, err := cmd.Output()
 		log.Println(string(out))
 		if err != nil {
