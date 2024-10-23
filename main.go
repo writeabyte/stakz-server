@@ -151,14 +151,12 @@ func main() {
 		scriptStr := string(script)
 		log.Println(scriptStr)
 		cmd := exec.Command("/bin/sh", "-c", scriptStr)
-		out, err := cmd.Output()
+		out, err := cmd.CombinedOutput()
 		log.Println(string(out))
 		if err != nil {
 			res.WriteHeader(http.StatusInternalServerError)
-			res.Write([]byte(err.Error()))
-		} else {
-			res.Write(out)
 		}
+		res.Write(out)
 	})))
 
 	addr := fmt.Sprintf(":%d", port)
