@@ -42,8 +42,23 @@ func writeFile(filePath string, content string) {
 	}
 }
 
-func keyMiddleware(next http.Handler) http.Handler {
+func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// Set CORS headers
+		for _, origin := range []string{"http://localhost", "https://stakz.dev"} {
+			if strings.HasPrefix(req.Header.Get("Origin"), origin) {
+				res.Header().Set("Access-Control-Allow-Origin", req.Header.Get("Origin"))
+			}
+		}
+		res.Header().Set("Access-Control-Allow-Headers", "Authorization, Accept, Referer, User-Agent, Content-Range, Content-Disposition, Content-Type, ETag")
+		res.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+		// Handle preflight request
+		if req.Method == http.MethodOptions {
+			res.WriteHeader(http.StatusOK)
+			return
+		}
+
 		key := req.Header.Get("Authorization")
 		if key != serverKey {
 			res.WriteHeader(http.StatusForbidden)
@@ -71,8 +86,7 @@ func main() {
 		log.Fatal("Error changing working directory:", err)
 	}
 
-	http.Handle("/", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.Header().Set("Access-Control-Allow-Origin", "*")
+	http.Handle("/", authMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		files := []string{}
 		err := filepath.Walk(".",
 			func(path string, info os.FileInfo, err error) error {
@@ -93,20 +107,9 @@ func main() {
 		fmt.Fprintf(res, string(body))
 	})))
 
-	http.Handle("/content", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/content", authMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		fmt.Println("Content Request received")
-		host := req.Header.Get("Origin")
-		if strings.HasPrefix(host, "http://localhost") || strings.HasPrefix(host, "https://stakz.dev") {
-			res.Header().Set("Access-Control-Allow-Origin", host)
-		} else {
-			res.WriteHeader(http.StatusForbidden)
-			res.Write([]byte("invalid host: " + host))
-			return
-		}
-		if req.Method == "OPTIONS" {
-			res.WriteHeader(http.StatusOK)
-			return
-		} else if req.Method == "POST" {
+		if req.Method == "POST" {
 			var data struct {
 				Path        string `json:"path"`
 				FileContent string `json:"fileContent"`
@@ -126,13 +129,11 @@ func main() {
 		}
 	})))
 
-	http.Handle("/echo", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.Header().Set("Access-Control-Allow-Origin", "*")
-		res.Header().Set("Access-Control-Allow-Headers", "Content-Range, Content-Disposition, Content-Type, ETag")
+	http.Handle("/echo", authMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		req.Write(res)
 	})))
 
-	http.Handle("/execute", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/execute", authMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if !executeEnabled {
 			res.WriteHeader(http.StatusForbidden)
 			res.Write([]byte("Execute endpoint disabled. Please enable it with the --execute flag."))
