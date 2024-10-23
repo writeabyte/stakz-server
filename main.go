@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -13,8 +15,19 @@ import (
 	"strings"
 )
 
+var serverKey string
+var executeEnabled bool
+
+func generateRandomKey() string {
+	bytes := make([]byte, 16)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		log.Fatal("Error generating random key:", err)
+	}
+	return hex.EncodeToString(bytes)
+}
+
 func writeFile(filePath string, content string) {
-	// Attempt to open the file for writing. If the file doesn't exist, create it.
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Println("Error opening or creating file:", err)
@@ -22,7 +35,6 @@ func writeFile(filePath string, content string) {
 	}
 	defer file.Close()
 
-	// Write content to the file
 	_, err = file.Write([]byte(content))
 	if err != nil {
 		fmt.Println("Error writing to file:", err)
@@ -30,16 +42,36 @@ func writeFile(filePath string, content string) {
 	}
 }
 
+func keyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		key := req.Header.Get("Authorization")
+		if key != serverKey {
+			res.WriteHeader(http.StatusForbidden)
+			res.Write([]byte("Invalid server key"))
+			return
+		}
+		next.ServeHTTP(res, req)
+	})
+}
+
 func main() {
-	// Define a function to handle HTTP requests
-	// TODO -
+	serverKey = generateRandomKey()
+	fmt.Println("Server Key:", serverKey)
+
 	var dir string
+	var port int
 	flag.StringVar(&dir, "dir", ".", "The directory you want the stakz server to run in.")
+	flag.BoolVar(&executeEnabled, "execute", false, "Enable the /execute endpoint.")
+	flag.IntVar(&port, "port", 3001, "The port the server will listen on.")
 	flag.Parse()
 
-	os.Chdir(dir)
+	err := os.Chdir(dir)
 
-	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
+	if err != nil {
+		log.Fatal("Error changing working directory:", err)
+	}
+
+	http.Handle("/", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Access-Control-Allow-Origin", "*")
 		files := []string{}
 		err := filepath.Walk(".",
@@ -59,9 +91,9 @@ func main() {
 			"files": files,
 		})
 		fmt.Fprintf(res, string(body))
-	})
+	})))
 
-	http.HandleFunc("/content", func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/content", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		fmt.Println("Content Request received")
 		host := req.Header.Get("Origin")
 		if strings.HasPrefix(host, "http://localhost") || strings.HasPrefix(host, "https://stakz.dev") {
@@ -75,7 +107,6 @@ func main() {
 			res.WriteHeader(http.StatusOK)
 			return
 		} else if req.Method == "POST" {
-			// Create a new decoder
 			var data struct {
 				Path        string `json:"path"`
 				FileContent string `json:"fileContent"`
@@ -93,20 +124,23 @@ func main() {
 				res.Write([]byte(err.Error()))
 			}
 		}
-	})
+	})))
 
-	// Basic echo http endpoint
-	http.HandleFunc("/echo", func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/echo", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Access-Control-Allow-Origin", "*")
 		res.Header().Set("Access-Control-Allow-Headers", "Content-Range, Content-Disposition, Content-Type, ETag")
 		req.Write(res)
-	})
+	})))
 
-	http.HandleFunc("/execute", func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/execute", keyMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		if !executeEnabled {
+			res.WriteHeader(http.StatusForbidden)
+			res.Write([]byte("Execute endpoint disabled. Please enable it with the --execute flag."))
+			return
+		}
 		res.Header().Set("Access-Control-Allow-Origin", "*")
 		res.Header().Set("Access-Control-Allow-Headers", "Content-Range, Content-Disposition, Content-Type, ETag")
-		// Execute the command
-		script, err := ioutil.ReadAll(req.Body)
+		script, err := io.ReadAll(req.Body)
 		if err != nil {
 			log.Println(err)
 			res.WriteHeader(http.StatusInternalServerError)
@@ -124,8 +158,9 @@ func main() {
 		} else {
 			res.Write(out)
 		}
-	})
+	})))
 
-	log.Fatalln(http.ListenAndServe(":3001", nil))
-	fmt.Println("Server listening on 3001")
+	addr := fmt.Sprintf(":%d", port)
+	log.Printf("Server listening on %s\n", addr)
+	log.Fatalln(http.ListenAndServe(addr, nil))
 }
