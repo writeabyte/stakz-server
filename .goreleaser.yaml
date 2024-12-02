@@ -180,18 +180,6 @@ brews:
       # Templates: allowed.
       token: "{{ .Env.HOMEBREW_GITHUB_API_TOKEN }}"
 
-      # Optionally specify if this is a token from another SCM, allowing to
-      # cross-publish.
-      #
-      # Only taken into account if `token` is set.
-      #
-      # Valid options:
-      # - 'github'
-      # - 'gitlab'
-      # - 'gitea'
-      #
-      # This feature is only available in GoReleaser Pro.
-      token_type: "github"
 
       # Sets up pull request creation instead of just pushing to the given branch.
       # Make sure the 'branch' property is different from base before enabling
@@ -204,13 +192,6 @@ brews:
 
         # Whether to open the PR as a draft or not.
         draft: true
-
-        # If the pull request template has checkboxes, enabling this will
-        # check all of them.
-        #
-        # This feature is only available in GoReleaser Pro, and when the pull
-        # request is being opened on GitHub.
-        check_boxes: true
 
         # Base can also be another repository, in which case the owner and name
         # above will be used as HEAD, allowing cross-repository pull requests.
