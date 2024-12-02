@@ -77,7 +77,7 @@ func main() {
 
 	flag.StringVar(&serverKey, "key", serverKey, "The server key used to authenticate requests.")
 	flag.StringVar(&dir, "dir", ".", "The directory you want the stakz server to run in.")
-	flag.BoolVar(&executeEnabled, "execute", false, "Enable the /execute endpoint.")
+	flag.BoolVar(&executeEnabled, "execute", false, "Enable the /execute endpoint allowing the server to run commands.")
 	flag.IntVar(&port, "port", 3001, "The port the server will listen on.")
 	flag.Parse()
 	fmt.Println("Server Key:", serverKey)
