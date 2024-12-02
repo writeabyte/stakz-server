@@ -16,6 +16,7 @@ import (
 )
 
 var serverKey string
+var keyEnabled bool = true
 var executeEnabled bool
 
 func generateRandomKey() string {
@@ -59,28 +60,44 @@ func authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		key := req.Header.Get("Authorization")
-		if key != serverKey {
-			res.WriteHeader(http.StatusForbidden)
-			res.Write([]byte("Invalid server key"))
+		if !keyEnabled {
+			next.ServeHTTP(res, req)
+			return
+		}
+
+		keyInvalid := isAuthInvalid(req, res)
+		if keyInvalid {
 			return
 		}
 		next.ServeHTTP(res, req)
 	})
 }
 
-func main() {
-	serverKey = generateRandomKey()
+func isAuthInvalid(req *http.Request, res http.ResponseWriter) bool {
+	key := req.Header.Get("Authorization")
+	if key != serverKey {
+		res.WriteHeader(http.StatusForbidden)
+		res.Write([]byte("Invalid server key"))
+		return true
+	}
+	return false
+}
 
+func main() {
 	var dir string
 	var port int
 
-	flag.StringVar(&serverKey, "key", serverKey, "The server key used to authenticate requests.")
+	flag.StringVar(&serverKey, "key", "", "The server key used to authenticate requests. If not set, a random key will be generated.")
 	flag.StringVar(&dir, "dir", ".", "The directory you want the stakz server to run in.")
 	flag.BoolVar(&executeEnabled, "execute", false, "Enable the /execute endpoint allowing the server to run commands.")
+	flag.BoolVar(&keyEnabled, "keyEnabled", true, "Whether or not to require a server key for requests. If false, the server key will be ignored and requests will not be authenticated. Only do this if you trust the execution context! (e.g. running in a container)")
 	flag.IntVar(&port, "port", 3001, "The port the server will listen on.")
 	flag.Parse()
-	fmt.Println("Server Key:", serverKey)
+
+	if serverKey == "" {
+		serverKey = generateRandomKey()
+		fmt.Println("Server Key:", serverKey)
+	}
 
 	err := os.Chdir(dir)
 
