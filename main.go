@@ -71,14 +71,16 @@ func authMiddleware(next http.Handler) http.Handler {
 
 func main() {
 	serverKey = generateRandomKey()
-	fmt.Println("Server Key:", serverKey)
 
 	var dir string
 	var port int
+
+	flag.StringVar(&serverKey, "key", serverKey, "The server key used to authenticate requests.")
 	flag.StringVar(&dir, "dir", ".", "The directory you want the stakz server to run in.")
 	flag.BoolVar(&executeEnabled, "execute", false, "Enable the /execute endpoint.")
 	flag.IntVar(&port, "port", 3001, "The port the server will listen on.")
 	flag.Parse()
+	fmt.Println("Server Key:", serverKey)
 
 	err := os.Chdir(dir)
 
