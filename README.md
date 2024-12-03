@@ -2,28 +2,36 @@
 
 What is it? Stakz-server is the backend for [stakz.dev](https://stakz.dev)
 
-It is a basic automation and file server that allows users to run commands from stakz.dev on their local machine or a remote server.
+It is a basic automation and file server that allows users to run commands from stakz.dev, save files, and browse the file system.
 
 ## Installation
 
 #### Using Homebrew
 
 ```bash
-brew install writeabyte/stakz/stakz
-```
+brew install writeabyte/stakz/stakz ```
 
 #### Using Go
 ```bash
-go get github.com/writeabyte/stakz-server
+go install github.com/writeabyte/stakz-server@latest 
 ```
+Create an alias for stakz-server in your shell profile
+```bash
+alias stakz="stakz-server"
+```
+
+#### From Releases
+Download the latest release from the [releases page](https://github.com/writeabyte/stakz-server/releases) and move the binary to your $PATH
 
 
 ## How does it work?
 
 run `stakz` to start the server. The server will start on port 3001 by default and will serve files from the current directory.
 
+By default, the server will not execute commands. To enable command execution, run `stakz --execute`.
+
 ```
-Usage of /Users/michael/Development/web/stakz/stakz-server/tmp/main:
+stakz --help
   -dir string
         The directory you want the stakz server to run in. (default ".")
   -execute
