@@ -6,9 +6,21 @@ It is a basic automation and file server that allows users to run commands from 
 
 ## Installation
 
+#### Using Homebrew
+
+```bash
+brew install writeabyte/stakz/stakz
+```
+
+#### Using Go
+```bash
+go get github.com/writeabyte/stakz-server
+```
 
 
 ## How does it work?
+
+run `stakz` to start the server. The server will start on port 3001 by default and will serve files from the current directory.
 
 ```
 Usage of /Users/michael/Development/web/stakz/stakz-server/tmp/main:
