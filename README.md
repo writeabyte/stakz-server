@@ -9,7 +9,7 @@ It is a basic automation and file server that allows users to run commands from 
 #### Using Homebrew
 
 ```bash
-brew install writeabyte/stakz/stakz
+brew install writeabyte/stakz/stakz 
 ```
 
 #### Using Go
