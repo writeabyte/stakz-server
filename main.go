@@ -148,9 +148,16 @@ func main() {
 		}
 	})))
 
-	http.Handle("/echo", authMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+	http.Handle("/health", authMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		req.Write(res)
 	})))
+
+	http.Handle("/echo", http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Set("Access-Control-Allow-Origin", "*")
+		res.Header().Set("Access-Control-Allow-Headers", "Authorization, Accept, Referer, User-Agent, Content-Range, Content-Disposition, Content-Type, ETag")
+		res.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		req.Write(res)
+	}))
 
 	http.Handle("/execute", authMiddleware(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if !executeEnabled {
@@ -158,8 +165,6 @@ func main() {
 			res.Write([]byte("Execute endpoint disabled. Please enable it with the --execute flag."))
 			return
 		}
-		res.Header().Set("Access-Control-Allow-Origin", "*")
-		res.Header().Set("Access-Control-Allow-Headers", "Content-Range, Content-Disposition, Content-Type, ETag")
 		script, err := io.ReadAll(req.Body)
 		if err != nil {
 			log.Println(err)

@@ -22,5 +22,5 @@ COPY --from=builder /app/myapp .
 EXPOSE 3001
 
 # Command to run your application
-CMD ["./myapp"]
+ENTRYPOINT ["./myapp"]
 
