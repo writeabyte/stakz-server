@@ -29,6 +29,13 @@ func generateRandomKey() string {
 }
 
 func writeFile(filePath string, content string) {
+	// Open file, creating it and all parent directories if it doesn't exist
+	err := os.MkdirAll(filepath.Dir(filePath), 0755)
+
+	if err != nil {
+		fmt.Println("Error opening or creating file:", err)
+		return
+	}
 	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Println("Error opening or creating file:", err)
@@ -41,6 +48,7 @@ func writeFile(filePath string, content string) {
 		fmt.Println("Error writing to file:", err)
 		return
 	}
+	fmt.Println("File written successfully ", filePath)
 }
 
 func authMiddleware(next http.Handler) http.Handler {
